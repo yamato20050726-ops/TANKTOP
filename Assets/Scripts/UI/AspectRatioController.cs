@@ -191,7 +191,7 @@ public class AspectRatioController : MonoBehaviour
             if (targetScaler != null)
             {
                 targetScaler.matchWidthOrHeight = 0.5f;
-                targetScaler.dynamicPixelsPerUnit = Mathf.Max(1f, Mathf.Ceil(DesignHeight / screenH));
+                targetScaler.dynamicPixelsPerUnit = 1f;
             }
 
             if (letterboxContainer != null)
@@ -213,7 +213,7 @@ public class AspectRatioController : MonoBehaviour
             if (targetScaler != null)
             {
                 targetScaler.matchWidthOrHeight = 1.0f;
-                targetScaler.dynamicPixelsPerUnit = Mathf.Max(1f, Mathf.Ceil(DesignHeight / screenH));
+                targetScaler.dynamicPixelsPerUnit = 1f;
             }
 
             if (letterboxContainer != null)
@@ -250,7 +250,7 @@ public class AspectRatioController : MonoBehaviour
             if (targetScaler != null)
             {
                 targetScaler.matchWidthOrHeight = 0.0f;
-                targetScaler.dynamicPixelsPerUnit = Mathf.Max(1f, Mathf.Ceil(DesignWidth / screenW));
+                targetScaler.dynamicPixelsPerUnit = 1f;
             }
 
             if (letterboxContainer != null)
