@@ -136,8 +136,8 @@ public class FloatingLabel : MonoBehaviour
         Vector2 screen = cam.WorldToScreenPoint(world);
 
         Vector2 local;
-        // Screen Space - Overlay のCanvasなので、変換に使うカメラはnullでよい
-        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(canvasRect, screen, null, out local))
+        RectTransform parentRect = self.parent as RectTransform ?? canvasRect;
+        if (RectTransformUtility.ScreenPointToLocalPointInRectangle(parentRect, screen, null, out local))
         {
             float rise = riseDistance * Mathf.Clamp01(elapsed / duration);
             self.anchoredPosition = local + new Vector2(0f, rise);

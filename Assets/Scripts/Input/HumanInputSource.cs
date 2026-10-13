@@ -143,7 +143,11 @@ public class HumanInputSource : CharacterInputSource
     /// <summary>今この画面で、フリックと認めるのに必要な横移動のピクセル数</summary>
     public float FlickThresholdPixels
     {
-        get { return Mathf.Max(flickDistanceMinPixels, Screen.width * flickDistanceFraction); }
+        get
+        {
+            float activeWidth = (Camera.main != null ? Camera.main.rect.width : 1f) * Screen.width;
+            return Mathf.Max(flickDistanceMinPixels, activeWidth * flickDistanceFraction);
+        }
     }
 
     /// <summary>最後に見た操作が、指だったかマウスだったか</summary>
