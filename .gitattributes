@@ -1,0 +1,11 @@
+# テキストファイルはLFに統一
+* text=auto eol=lf
+
+# Windows固有のスクリプト
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# バイナリファイルは変換しない
+*.png binary
+*.jpg binary
+*.dll binary
