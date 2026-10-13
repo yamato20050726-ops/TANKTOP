@@ -3,25 +3,23 @@ using UnityEngine;
 using UnityEngine.UI;
 
 /// <summary>
-/// 画面の表示比率を縦画面（9:16）に固定・維持するコントローラー。
+/// 画面の表示比率を縦画面（9:16）に固定・維持し、
+/// テクスチャおよび文字のボケ（Blur）やガタつき（Jaggy）を完全に解消するコントローラー。
 ///
-/// Unity Play（play.unity.com）などのブラウザ環境では、PCの横長画面（16:9等）の
-/// プレイヤー枠に埋め込まれるため、標準のままだとゲーム画面やUIが横いっぱいに引き伸ばされてしまいます。
-///
-/// 【テクスチャや文字のジャギー・ボケ・ガタつき（画質劣化）の徹底対策】
-/// 1. サブピクセル描画の防止:
-///    cam.rect（浮動小数）による半端な小数ピクセル描画（0.25pxズレ等）を廃止し、
-///    cam.pixelRect を用いて画面の物理ピクセルに完全一致する偶数ピクセル（整数）で正確に配置。
-/// 2. URPの多重カメラによる画質低下の防止:
-///    低深度の背景カメラ（マルチパス描画やバイリニア補間ブリット）を廃止し、
-///    単一カメラによるダイレクトレンダリングで最高画質を維持。
-///    余白の黒帯はCanvasオーバーレイの黒パネル（LeftBlocker / RightBlocker）で完全にカバー。
-/// 3. 比率許容差による不要な縮小防止:
-///    画面が最初からほぼ9:16（モバイル実機や9:16のGameビュー等）の場合は
-///    cam.rect = (0, 0, 1, 1) の全画面ネイティブ描画を行い、一切の縮小・ズレを発生させない。
-/// 4. UIコンテナの1080x1920ピクセル整合:
-///    CanvasScaler（1080x1920基準）と連動し、UI要素を中央の9:16コンテナ内に収めつつ、
-///    整数倍率で綺麗にレンダリング。
+/// 【ボケ・ガタつきの完全解消メカニズム】
+/// 1. カメラのダイレクトレンダリング（全画面描画）:
+///    cam.pixelRect や cam.rect を画面未満の小サイズに設定すると、URPが中間レンダーテクスチャを作成し、
+///    画面へのブリット（Blit）時にバイリニア補間（ボケ）をかけてしまいます。
+///    常に cam.rect = (0, 0, 1, 1) のネイティブ全画面描画を維持し、余白は最前面の黒帯パネル
+///    （LeftBlocker / RightBlocker）で完全に覆うことで、URPの補間ボケを根絶します。
+/// 2. ドットフォントのPointフィルタ（ニアレストネイバー）化:
+///    ドットフォント（KatasumiDotHutoji）のテクスチャアトラスを FilterMode.Point で描画。
+///    Font.textureRebuilt にフックして常にPointフィルタを維持し、文字の滲み・ボケを完全に排除。
+/// 3. CanvasScaler の dynamicPixelsPerUnit 自動最適化:
+///    画面高さが1920未満に縮小されても、文字画像が縮小ベイクされてボケないよう、
+///    dynamicPixelsPerUnit をスケールに応じて自動調整。
+/// 4. Canvas.pixelPerfect 有効化:
+///    UI要素の小数座標配置（サブピクセル描画）によるバイリニア滲みを防止。
 /// </summary>
 [DefaultExecutionOrder(-1000)]
 [RequireComponent(typeof(Camera))]
@@ -33,9 +31,9 @@ public class AspectRatioController : MonoBehaviour
 
     public const float DesignWidth = 1080f;
     public const float DesignHeight = 1920f;
+    private const float BaseOrthographicSize = 5.0f;
 
     private Camera cam;
-
     private Canvas targetCanvas;
     private CanvasScaler targetScaler;
     private RectTransform letterboxContainer;
@@ -56,6 +54,22 @@ public class AspectRatioController : MonoBehaviour
         ApplyLayout();
     }
 
+    void OnEnable()
+    {
+        Font.textureRebuilt += OnFontTextureRebuilt;
+        UpdateFontFilters();
+    }
+
+    void OnDisable()
+    {
+        Font.textureRebuilt -= OnFontTextureRebuilt;
+    }
+
+    void Start()
+    {
+        UpdateFontFilters();
+    }
+
     void Update()
     {
         if (Screen.width != lastScreenWidth || Screen.height != lastScreenHeight)
@@ -64,10 +78,6 @@ public class AspectRatioController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// 以前生成されていた余計な背景カメラが存在すれば削除し、
-    /// URPのマルチカメラによるオフスクリーン描画＆バイリニアボケを解消する
-    /// </summary>
     private void CleanupLegacyBackgroundCamera()
     {
         Transform legacy = transform.Find("LetterboxBackgroundCamera");
@@ -76,7 +86,6 @@ public class AspectRatioController : MonoBehaviour
             Destroy(legacy.gameObject);
         }
 
-        // メインカメラ自身が黒でクリアするように設定
         if (cam != null)
         {
             cam.clearFlags = CameraClearFlags.SolidColor;
@@ -84,9 +93,6 @@ public class AspectRatioController : MonoBehaviour
         }
     }
 
-    /// <summary>
-    /// Canvas内に9:16専用のLetterboxContainerを作成し、UIをその中に収める
-    /// </summary>
     private void EnsureCanvasSetup()
     {
         if (targetCanvas == null)
@@ -94,6 +100,8 @@ public class AspectRatioController : MonoBehaviour
             targetCanvas = FindObjectOfType<Canvas>();
         }
         if (targetCanvas == null) return;
+
+        targetCanvas.pixelPerfect = true;
 
         targetScaler = targetCanvas.GetComponent<CanvasScaler>();
         if (targetScaler != null)
@@ -122,7 +130,6 @@ public class AspectRatioController : MonoBehaviour
             letterboxContainer.anchoredPosition = Vector2.zero;
             letterboxContainer.localScale = Vector3.one;
 
-            // Canvas直下にあった既存UIをすべてLetterboxContainer内に移動
             List<Transform> childrenToMove = new List<Transform>();
             for (int i = 0; i < targetCanvas.transform.childCount; i++)
             {
@@ -178,9 +185,31 @@ public class AspectRatioController : MonoBehaviour
         return obj.GetComponent<RectTransform>();
     }
 
-    /// <summary>
-    /// 現在の画面解像度に合わせて、カメラ・UI・黒帯をピクセルパーフェクトに適用
-    /// </summary>
+    private void OnFontTextureRebuilt(Font font)
+    {
+        ApplyPointFilterToFont(font);
+    }
+
+    public void UpdateFontFilters()
+    {
+        Text[] allTexts = FindObjectsOfType<Text>(true);
+        for (int i = 0; i < allTexts.Length; i++)
+        {
+            if (allTexts[i] != null && allTexts[i].font != null)
+            {
+                ApplyPointFilterToFont(allTexts[i].font);
+            }
+        }
+    }
+
+    private void ApplyPointFilterToFont(Font font)
+    {
+        if (font != null && font.material != null && font.material.mainTexture != null)
+        {
+            font.material.mainTexture.filterMode = FilterMode.Point;
+        }
+    }
+
     public void ApplyLayout()
     {
         lastScreenWidth = Screen.width;
@@ -195,15 +224,18 @@ public class AspectRatioController : MonoBehaviour
 
         float currentAspect = (float)screenW / (float)screenH;
 
-        // ほぼ9:16（誤差0.5%以内）なら、ピラーボックス化せず全画面をネイティブ描画
-        // これにより微小な小数ズレ（0.25px等）による文字・テクスチャのボケを完全に排除
+        // カメラは常に全画面ダイレクト描画にして、URPの中間テクスチャ生成とバイリニアブリットボケを完全防止
+        cam.rect = new Rect(0f, 0f, 1f, 1f);
+
+        // ほぼ9:16（誤差0.5%以内）
         if (Mathf.Abs(currentAspect - TargetAspect) < 0.005f)
         {
-            cam.rect = new Rect(0f, 0f, 1f, 1f);
+            cam.orthographicSize = BaseOrthographicSize;
 
             if (targetScaler != null)
             {
                 targetScaler.matchWidthOrHeight = 0.5f;
+                targetScaler.dynamicPixelsPerUnit = Mathf.Max(1f, Mathf.Ceil(DesignHeight / screenH));
             }
 
             if (letterboxContainer != null)
@@ -216,24 +248,16 @@ public class AspectRatioController : MonoBehaviour
             if (rightBlocker != null) rightBlocker.gameObject.SetActive(false);
             if (topBlocker != null) topBlocker.gameObject.SetActive(false);
             if (bottomBlocker != null) bottomBlocker.gameObject.SetActive(false);
-            return;
         }
-
-        // 画面が9:16より横に広い場合（PC・Unity Play等の16:9環境）→ 左右に黒帯
-        if (currentAspect > TargetAspect)
+        // 横長画面（PC・Unity Play等の16:9環境）→ 左右に黒帯
+        else if (currentAspect > TargetAspect)
         {
-            // 物理ピクセル単位で正確な整数サイズを算出（偶数に丸めて左右完全対称）
-            int targetH = screenH;
-            int targetW = Mathf.RoundToInt(targetH * TargetAspect);
-            targetW = (targetW / 2) * 2;
-            int posX = (screenW - targetW) / 2;
-
-            // 整数ピクセル矩形を設定（サブピクセルのギザギザ・ボケを防止）
-            cam.pixelRect = new Rect(posX, 0, targetW, targetH);
+            cam.orthographicSize = BaseOrthographicSize;
 
             if (targetScaler != null)
             {
                 targetScaler.matchWidthOrHeight = 1.0f;
+                targetScaler.dynamicPixelsPerUnit = Mathf.Max(1f, Mathf.Ceil(DesignHeight / screenH));
             }
 
             if (letterboxContainer != null)
@@ -242,7 +266,6 @@ public class AspectRatioController : MonoBehaviour
                 letterboxContainer.anchoredPosition = Vector2.zero;
             }
 
-            // 左右の黒帯を配置
             float halfDesignWidth = DesignWidth * 0.5f; // 540
             if (leftBlocker != null)
             {
@@ -263,19 +286,15 @@ public class AspectRatioController : MonoBehaviour
             if (topBlocker != null) topBlocker.gameObject.SetActive(false);
             if (bottomBlocker != null) bottomBlocker.gameObject.SetActive(false);
         }
-        // 画面が9:16より縦に長い場合（細長いスマホ等）→ 上下に黒帯
+        // 縦長画面（細長いスマホ等）→ 上下に黒帯
         else
         {
-            int targetW = screenW;
-            int targetH = Mathf.RoundToInt(targetW / TargetAspect);
-            targetH = (targetH / 2) * 2;
-            int posY = (screenH - targetH) / 2;
-
-            cam.pixelRect = new Rect(0, posY, targetW, targetH);
+            cam.orthographicSize = BaseOrthographicSize * (TargetAspect / currentAspect);
 
             if (targetScaler != null)
             {
                 targetScaler.matchWidthOrHeight = 0.0f;
+                targetScaler.dynamicPixelsPerUnit = Mathf.Max(1f, Mathf.Ceil(DesignWidth / screenW));
             }
 
             if (letterboxContainer != null)
@@ -284,7 +303,6 @@ public class AspectRatioController : MonoBehaviour
                 letterboxContainer.anchoredPosition = Vector2.zero;
             }
 
-            // 上下の黒帯を配置
             float halfDesignHeight = DesignHeight * 0.5f; // 960
             if (topBlocker != null)
             {
@@ -305,5 +323,7 @@ public class AspectRatioController : MonoBehaviour
             if (leftBlocker != null) leftBlocker.gameObject.SetActive(false);
             if (rightBlocker != null) rightBlocker.gameObject.SetActive(false);
         }
+
+        UpdateFontFilters();
     }
 }
