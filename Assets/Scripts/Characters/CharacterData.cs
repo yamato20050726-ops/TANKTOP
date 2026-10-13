@@ -278,31 +278,31 @@ public class CharacterData : ScriptableObject
         switch (kind)
         {
             case SkillKind.TripleWide:
-                return "たまが 3ほうこうに ひろがって とんでいく。";
+                return "たまが 3ほうこうに ひろがる！";
             case SkillKind.BigShot:
-                return "おおきくて おもい たまを 1つ うつ。";
+                return "きょだいな たまを 1ぱつ はなつ！";
             case SkillKind.Dash:
-                return "いっしゅんだけ むてきに なって よけられる。";
+                return "いっしゅん むてきで かけぬける！";
             case SkillKind.Shield:
-                return "しばらくのあいだ あいての たまが きかなくなる。";
+                return "しばらく あいての たまを ガード！";
             case SkillKind.PowderShot:
-                return "ゆっくり ただよう ふらふらした たまを 1つ うつ。";
+                return "ふわふわ ただよう たまを うつ。";
             case SkillKind.PowderBreath:
-                return "パウダーショットを つづけて はきだす。";
+                return "パウダーショットを れんしゃ！";
             case SkillKind.SarcoShot:
-                return "くねくね まがりながら とんでいく たまを 1つ うつ。";
+                return "くねくね まがりながら とぶ。";
             case SkillKind.Anabolic:
-                return "つかうたびに サルコーショットが はやくなる。";
+                return "つかうたびに たまが はやくなる！";
             case SkillKind.Trap:
-                return "めのまえに プレートを おく。あいての たまが あたると はじきかえす。";
+                return "プレートを おき、たまを はじきかえす！";
             case SkillKind.Barrage:
-                return "ちいさい たまを むきを ちらしながら つづけて うつ。";
+                return "むきを ちらして たんまくを れんしゃ！";
             case SkillKind.BananaShot:
-                return "おおきな バナナを くるくる まわしながら うちだす。";
+                return "おおきな バナナを なげつける！";
             case SkillKind.ChaseShot:
-                return "1びょうご あいてが うごいていた ほうへ まがる たまを うつ。";
+                return "あいてを ついせきする たまを うつ。";
             case SkillKind.RapidShot:
-                return "とても はやい たまを 1つ うつ。";
+                return "ちょうこうそくの たまを 1ぱつ うつ！";
         }
         return "";
     }
@@ -316,8 +316,8 @@ public class CharacterData : ScriptableObject
         if (!string.IsNullOrEmpty(shotDescription)) { return shotDescription; }
 
         return waveShot
-            ? "うねりながら とんでいく きほんの ショット。"
-            : "まっすぐ とんでいく きほんの ショット。";
+            ? "うねりながら とぶ ショット。"
+            : "まっすぐ とぶ ショット。";
     }
 
     /// <summary>スキル枠の説明。空なら種類ごとの既定の文章を返す</summary>
