@@ -153,11 +153,11 @@ public class ShopPanel : MonoBehaviour
     public string shotCostFormat = "コスト {0}";
 
     [Header("文字の大きさ")]
-    public int cardNameFontSize = 44;
-    public int cardPriceFontSize = 44;
-    public int shotNameFontSize = 44;
-    public int shotCostFontSize = 36;
-    public int shotDescFontSize = 36;
+    public int cardNameFontSize = 34;
+    public int cardPriceFontSize = 34;
+    public int shotNameFontSize = 32;
+    public int shotCostFontSize = 24;
+    public int shotDescFontSize = 24;
 
     [Header("デバッグ")]
     public bool debugLog = true;
