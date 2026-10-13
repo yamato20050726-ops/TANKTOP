@@ -12,13 +12,10 @@ using UnityEngine.UI;
 ///    画面へのブリット（Blit）時にバイリニア補間（ボケ）をかけてしまいます。
 ///    常に cam.rect = (0, 0, 1, 1) のネイティブ全画面描画を維持し、余白は最前面の黒帯パネル
 ///    （LeftBlocker / RightBlocker）で完全に覆うことで、URPの補間ボケを根絶します。
-/// 2. ドットフォントのPointフィルタ（ニアレストネイバー）化:
-///    ドットフォント（KatasumiDotHutoji）のテクスチャアトラスを FilterMode.Point で描画。
-///    Font.textureRebuilt にフックして常にPointフィルタを維持し、文字の滲み・ボケを完全に排除。
-/// 3. CanvasScaler の dynamicPixelsPerUnit 自動最適化:
+/// 2. CanvasScaler の dynamicPixelsPerUnit 自動最適化:
 ///    画面高さが1920未満に縮小されても、文字画像が縮小ベイクされてボケないよう、
 ///    dynamicPixelsPerUnit をスケールに応じて自動調整。
-/// 4. Canvas.pixelPerfect 有効化:
+/// 3. Canvas.pixelPerfect 有効化:
 ///    UI要素の小数座標配置（サブピクセル描画）によるバイリニア滲みを防止。
 /// </summary>
 [DefaultExecutionOrder(-1000)]
@@ -52,22 +49,6 @@ public class AspectRatioController : MonoBehaviour
         CleanupLegacyBackgroundCamera();
         EnsureCanvasSetup();
         ApplyLayout();
-    }
-
-    void OnEnable()
-    {
-        Font.textureRebuilt += OnFontTextureRebuilt;
-        UpdateFontFilters();
-    }
-
-    void OnDisable()
-    {
-        Font.textureRebuilt -= OnFontTextureRebuilt;
-    }
-
-    void Start()
-    {
-        UpdateFontFilters();
     }
 
     void Update()
@@ -185,31 +166,6 @@ public class AspectRatioController : MonoBehaviour
         return obj.GetComponent<RectTransform>();
     }
 
-    private void OnFontTextureRebuilt(Font font)
-    {
-        ApplyPointFilterToFont(font);
-    }
-
-    public void UpdateFontFilters()
-    {
-        Text[] allTexts = FindObjectsOfType<Text>(true);
-        for (int i = 0; i < allTexts.Length; i++)
-        {
-            if (allTexts[i] != null && allTexts[i].font != null)
-            {
-                ApplyPointFilterToFont(allTexts[i].font);
-            }
-        }
-    }
-
-    private void ApplyPointFilterToFont(Font font)
-    {
-        if (font != null && font.material != null && font.material.mainTexture != null)
-        {
-            font.material.mainTexture.filterMode = FilterMode.Point;
-        }
-    }
-
     public void ApplyLayout()
     {
         lastScreenWidth = Screen.width;
@@ -323,7 +279,5 @@ public class AspectRatioController : MonoBehaviour
             if (leftBlocker != null) leftBlocker.gameObject.SetActive(false);
             if (rightBlocker != null) rightBlocker.gameObject.SetActive(false);
         }
-
-        UpdateFontFilters();
     }
 }
