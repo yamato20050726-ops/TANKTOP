@@ -141,6 +141,42 @@ public static class PlayerProfile
         }
     }
 
+    /// <summary>
+    /// アカウントデータを完全に消去し、初期状態に戻す
+    /// </summary>
+    public static void DeleteAccount()
+    {
+        Load();
+
+        // プロフィールの初期化
+        SaveStore.Delete(NameKey);
+        SaveStore.Delete(LevelKey);
+        SaveStore.Delete(ExpKey);
+        cachedName = DefaultName;
+        cachedLevel = StartLevel;
+        cachedExp = 0;
+
+        // 所持コイン初期化
+        PlayerWallet.Reset();
+
+        // ウェルカムお礼画面フラグ初期化
+        SaveStore.Delete("tanktop.welcomed");
+
+        // キャラクター購入状態の初期化
+        CharacterSelectController.ResetAllPurchases();
+
+        // スタンドアロン/エディタではPlayerPrefs全体もクリーンアップ
+#if !UNITY_WEBGL || UNITY_EDITOR
+        PlayerPrefs.DeleteAll();
+        PlayerPrefs.Save();
+#endif
+
+        if (Changed != null)
+        {
+            Changed();
+        }
+    }
+
     private static void Load()
     {
         if (loaded)
@@ -331,6 +367,14 @@ public static class PlayerWallet
     {
         Load();
         cachedCoins = Mathf.Max(0, value);
+        Save();
+    }
+
+    /// <summary>所持コインを初期枚数にリセットする</summary>
+    public static void Reset()
+    {
+        SaveStore.Delete(CoinsKey);
+        cachedCoins = StartingCoins;
         Save();
     }
 }

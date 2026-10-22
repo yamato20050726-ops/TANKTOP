@@ -888,6 +888,20 @@ public class GameAudio : MonoBehaviour
         if (a != null) { a.PlayFallback(a.uiBack); }
     }
 
+    /// <summary>ふつうのボタン音・タップ音</summary>
+    public static void UiTap()
+    {
+        GameAudio a = Resolve();
+        if (a != null) { a.PlayFallback(null); }
+    }
+
+    /// <summary>決定音・OK音</summary>
+    public static void UiConfirm()
+    {
+        GameAudio a = Resolve();
+        if (a != null) { a.PlayFallback(a.uiConfirm); }
+    }
+
     /// <summary>ホームやキャラ選択の曲に切り替える</summary>
     public static void TitleBgm()
     {

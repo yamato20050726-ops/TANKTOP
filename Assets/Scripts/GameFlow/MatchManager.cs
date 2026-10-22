@@ -120,6 +120,9 @@ public class MatchManager : MonoBehaviour
     [Tooltip("レベルアップ時に出す全画面演出。テストモードでも、上がったときだけ挟まる")]
     public LevelUpPanel levelUpPanel;
 
+    [Tooltip("リザルト表示後に出す、経験値上昇ポップアップ")]
+    public ExpResultPopup expResultPopup;
+
     [Tooltip("倒れてからレベルアップ演出が出るまでの間（秒）")]
     public float levelUpDelay = 0.9f;
 
@@ -142,6 +145,11 @@ public class MatchManager : MonoBehaviour
     private bool endedByDisconnect;
 
     private int levelBeforeMatch;
+    private int expBeforeMatch;
+    private int totalExpGained;
+    private int outcomeExpGained;
+    private int pickupExpGained;
+    private int pickedPointsCount;
     private int levelsGainedThisMatch;
     private int coinsGainedThisMatch;
 
@@ -154,6 +162,15 @@ public class MatchManager : MonoBehaviour
         if (enemyShatter == null && enemyHealth != null)
         {
             enemyShatter = enemyHealth.GetComponent<ShatterEffect>();
+        }
+
+        if (expResultPopup == null)
+        {
+            expResultPopup = FindObjectOfType<ExpResultPopup>(true);
+        }
+        if (expResultPopup != null)
+        {
+            expResultPopup.gameObject.SetActive(false);
         }
 
         if (resultPanel != null)
@@ -222,33 +239,75 @@ public class MatchManager : MonoBehaviour
     /// </summary>
     private IEnumerator AfterMatchRoutine(bool playerWon)
     {
-        bool useResultScreen = !MatchSession.isTestMode || debugAlwaysShowResult;
+        bool isOnline = MatchSession.matchMode == MatchSession.MatchMode.Online;
+        bool useResultScreen = isOnline || !MatchSession.isTestMode || debugAlwaysShowResult;
 
-        if (levelsGainedThisMatch > 0 && levelUpPanel != null)
+        if (useResultScreen)
         {
-            yield return new WaitForSecondsRealtime(levelUpDelay);
+            yield return new WaitForSecondsRealtime(resultDelay);
+            ShowResult(playerWon);
 
-            bool closed = false;
-            GameAudio.LevelUp();
-            levelUpPanel.Show(levelBeforeMatch, PlayerProfile.Level, BuildRewardMessage(),
-                              coinsGainedThisMatch, delegate { closed = true; });
-
-            while (!closed)
+            // リザルトが表示された約0.5秒後に、経験値ポップアップを表示
+            if (expResultPopup != null && totalExpGained > 0)
             {
-                yield return null;
+                yield return new WaitForSecondsRealtime(0.5f);
+
+                bool popupClosed = false;
+                expResultPopup.Show(
+                    levelBeforeMatch,
+                    expBeforeMatch,
+                    totalExpGained,
+                    outcomeExpGained,
+                    playerWon,
+                    pickedPointsCount,
+                    pickupExpGained,
+                    levelsGainedThisMatch > 0,
+                    delegate { popupClosed = true; }
+                );
+
+                while (!popupClosed)
+                {
+                    yield return null;
+                }
+            }
+
+            // レベルアップしていて解放・コイン等の演出パネルがあれば、ポップアップを閉じた後に表示
+            if (levelsGainedThisMatch > 0 && levelUpPanel != null)
+            {
+                yield return new WaitForSecondsRealtime(0.2f);
+
+                bool closed = false;
+                GameAudio.LevelUp();
+                levelUpPanel.Show(levelBeforeMatch, PlayerProfile.Level, BuildRewardMessage(),
+                                  coinsGainedThisMatch, delegate { closed = true; });
+
+                while (!closed)
+                {
+                    yield return null;
+                }
             }
         }
         else
         {
-            yield return new WaitForSecondsRealtime(useResultScreen ? resultDelay : testRestartDelay);
-        }
+            if (levelsGainedThisMatch > 0 && levelUpPanel != null)
+            {
+                yield return new WaitForSecondsRealtime(levelUpDelay);
 
-        if (useResultScreen)
-        {
-            ShowResult(playerWon);
-        }
-        else
-        {
+                bool closed = false;
+                GameAudio.LevelUp();
+                levelUpPanel.Show(levelBeforeMatch, PlayerProfile.Level, BuildRewardMessage(),
+                                  coinsGainedThisMatch, delegate { closed = true; });
+
+                while (!closed)
+                {
+                    yield return null;
+                }
+            }
+            else
+            {
+                yield return new WaitForSecondsRealtime(testRestartDelay);
+            }
+
             if (debugLog)
             {
                 Debug.Log("[MatchManager] テストモードなので、試合開始直後の状態に戻します");
@@ -290,8 +349,16 @@ public class MatchManager : MonoBehaviour
     {
         levelsGainedThisMatch = 0;
         coinsGainedThisMatch = 0;
+        totalExpGained = 0;
 
+        bool isOnline = MatchSession.matchMode == MatchSession.MatchMode.Online;
+
+        // 本来はオンライン対戦（だれかと対戦）のみ経験値を得られる仕様
         if (MatchSession.isTestMode && !grantExpInTestMode)
+        {
+            return;
+        }
+        if (!MatchSession.isTestMode && !isOnline)
         {
             return;
         }
@@ -308,6 +375,12 @@ public class MatchManager : MonoBehaviour
 
         int total = outcomeExp + pickupExp;
         levelBeforeMatch = PlayerProfile.Level;
+        expBeforeMatch = PlayerProfile.Exp;
+        totalExpGained = total;
+        outcomeExpGained = outcomeExp;
+        pickupExpGained = pickupExp;
+        pickedPointsCount = picked;
+
         int levelsGained = PlayerProfile.AddExp(total);
         levelsGainedThisMatch = levelsGained;
 
@@ -606,4 +679,13 @@ public class MatchManager : MonoBehaviour
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
+
+#if UNITY_EDITOR
+    [ContextMenu("テスト用：レベルを1に戻す (Reset to Lv.1)")]
+    public void DebugResetToLevel1()
+    {
+        PlayerProfile.ResetProgress();
+        Debug.Log("[MatchManager] プレイヤーの進行状況をリセットしました（Lv.1, EXP: 0）");
+    }
+#endif
 }

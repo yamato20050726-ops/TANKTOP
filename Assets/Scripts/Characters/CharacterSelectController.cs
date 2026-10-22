@@ -977,6 +977,22 @@ public class CharacterSelectController : MonoBehaviour
         SaveStore.SetInt(PurchaseKey(data), 1);
     }
 
+    /// <summary>全キャラクターの購入状態を初期化する（アカウント削除用）</summary>
+    public static void ResetAllPurchases()
+    {
+        CharacterSelectController csc = FindObjectOfType<CharacterSelectController>(true);
+        if (csc != null && csc.roster != null)
+        {
+            foreach (var charData in csc.roster)
+            {
+                if (charData != null)
+                {
+                    SaveStore.Delete(PurchaseKey(charData));
+                }
+            }
+        }
+    }
+
     /// <summary>「ショップへ」ボタンのOnClickから呼ぶ</summary>
     public void OnShopLinkPressed()
     {
