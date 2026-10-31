@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <title>{{{ PRODUCT_NAME }}}</title>
+
+  <!--
+    user-scalable=no でピンチズームを止める。これが無いと、
+    連打しているつもりが画面を拡大してしまい、ゲームにならない。
+    viewport-fit=cover は、iPhoneのノッチのある機種で
+    画面の端まで使うための指定。
+  -->
+  <meta name="viewport"
+        content="width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0d0f14">
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      background: #0d0f14;
+      overflow: hidden;
+    }
+
+    body {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      color: #e8e8ee;
+      font-family: system-ui, -apple-system, "Hiragino Kaku Gothic ProN",
+                   "Noto Sans JP", "Yu Gothic", sans-serif;
+
+      /* 指の操作をブラウザに横取りさせない。
+         これが無いと、フリックがページのスクロールとして食われる */
+      touch-action: none;
+      overscroll-behavior: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    #stage {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #unity-canvas {
+      display: block;
+      background: #0d0f14;
+      touch-action: none;
+      outline: none;
+    }
+
+    /*
+      Unityは、スマホで文字を入力させるときに、見えないHTMLの入力欄を
+      ページの中に作ってOSのキーボードを呼び出す。
+      body側でかけている「選択させない」「指の操作をブラウザに渡さない」が
+      その入力欄にも効いてしまうと、キーボードが出なかったり、
+      出ても文字を触れなくなったりする。入力欄だけは例外にしておく。
+    */
+    input, textarea {
+      -webkit-user-select: text !important;
+      user-select: text !important;
+      touch-action: auto !important;
+    }
+
+    /* --- よみこみ中 --- */
+    #loading {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 18px;
+      background: #0d0f14;
+      z-index: 10;
+      transition: opacity 0.3s ease;
+    }
+
+    #loading.done {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    #loading-title {
+      font-size: 28px;
+      letter-spacing: 0.25em;
+      font-weight: 700;
+    }
+
+    #bar {
+      width: 62%;
+      max-width: 320px;
+      height: 10px;
+      border: 2px solid #40465a;
+      background: #171b24;
+    }
+
+    #bar-fill {
+      width: 0%;
+      height: 100%;
+      background: #e8e8ee;
+      transition: width 0.15s linear;
+    }
+
+    #loading-note {
+      font-size: 14px;
+      color: #8f97ab;
+    }
+
+    /* --- よこむきのときの案内 --- */
+    #rotate {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: #0d0f14;
+      font-size: 20px;
+      letter-spacing: 0.1em;
+      z-index: 20;
+    }
+
+    #rotate.show {
+      display: flex;
+    }
+
+    /* --- しくじったとき --- */
+    #error {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      box-sizing: border-box;
+      background: #0d0f14;
+      color: #ff9b9b;
+      font-size: 14px;
+      line-height: 1.7;
+      text-align: center;
+      z-index: 30;
+    }
+
+    #error.show {
+      display: flex;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="stage">
+    <canvas id="unity-canvas" tabindex="-1"></canvas>
+  </div>
+
+  <div id="loading">
+    <div id="loading-title">{{{ PRODUCT_NAME }}}</div>
+    <div id="bar"><div id="bar-fill"></div></div>
+    <div id="loading-note">よみこみちゅう…</div>
+  </div>
+
+  <div id="rotate">たてむきに してね</div>
+
+  <div id="error"></div>
+
+  <script src="Build/{{{ LOADER_FILENAME }}}"></script>
+  <script>
+    (function () {
+      "use strict";
+
+      // このゲームは縦画面（9:16）で作ってある。
+      // 横に広い画面では引き伸ばさず、真ん中に縦長のまま置く。
+      var ASPECT = 9 / 16;
+
+      var canvas = document.querySelector("#unity-canvas");
+      var loading = document.querySelector("#loading");
+      var barFill = document.querySelector("#bar-fill");
+      var rotate = document.querySelector("#rotate");
+      var errorBox = document.querySelector("#error");
+      var unityInstance = null;
+
+      function showError(message) {
+        errorBox.textContent = message;
+        errorBox.className = "show";
+      }
+
+      /*
+        画面いっぱいの高さを使い、横幅だけ 9:16 を超えないように抑える。
+        ・スマホ（縦長）　 → 画面いっぱいに広がる
+        ・パソコン（横長） → 真ん中に縦長の帯として出る
+        ・タブレット　　　 → スマホに近い見え方になる
+      */
+      function resize() {
+        var vw = window.innerWidth;
+        var vh = window.innerHeight;
+
+        var w = vw;
+        var h = Math.round(w / ASPECT);
+        if (h > vh) {
+          h = vh;
+          w = Math.round(h * ASPECT);
+        }
+
+        canvas.style.width = w + "px";
+        canvas.style.height = h + "px";
+
+        // 指で触る端末が横向きになっているときだけ案内を出す。
+        // パソコンの横長ウィンドウは正常なので出さない
+        var isTouch = window.matchMedia("(pointer: coarse)").matches;
+        rotate.className = (isTouch && vw > vh) ? "show" : "";
+      }
+
+      window.addEventListener("resize", resize);
+      window.addEventListener("orientationchange", function () {
+        // 回転直後はまだ古い寸法が返ることがあるので、少し待ってから測る
+        setTimeout(resize, 200);
+      });
+      resize();
+
+      // ページ全体が指で動いてしまうのを止める（キャンバスの外を触ったとき用）。
+      // ただし入力欄の中は素通しする。ここまで止めると、
+      // キーボードで文字を打つときのカーソル移動まで邪魔してしまう
+      document.addEventListener("touchmove", function (e) {
+        var t = e.target;
+        if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA")) { return; }
+        e.preventDefault();
+      }, { passive: false });
+
+      var config = {
+        dataUrl: "Build/{{{ DATA_FILENAME }}}",
+        frameworkUrl: "Build/{{{ FRAMEWORK_FILENAME }}}",
+        codeUrl: "Build/{{{ CODE_FILENAME }}}",
+        streamingAssetsUrl: "StreamingAssets",
+        companyName: "{{{ COMPANY_NAME }}}",
+        productName: "{{{ PRODUCT_NAME }}}",
+        productVersion: "{{{ PRODUCT_VERSION }}}",
+
+        // Retinaの端末をそのままの解像度で描くと重すぎるので、2倍までで頭打ちにする。
+        // ドット絵なので、これ以上細かくしても見た目はほとんど変わらない
+        devicePixelRatio: Math.min(window.devicePixelRatio || 1, 2),
+
+        showBanner: function (msg, type) {
+          if (type === "error") { showError(msg); }
+        }
+      };
+
+      if (typeof createUnityInstance !== "function") {
+        showError("よみこみに しっぱいしました。\n" +
+                  "Buildフォルダが 一緒に置かれているか かくにんしてください。");
+        return;
+      }
+
+      createUnityInstance(canvas, config, function (progress) {
+        barFill.style.width = (progress * 100) + "%";
+      }).then(function (instance) {
+        unityInstance = instance;
+        loading.className = "done";
+        resize();
+      }).catch(function (message) {
+        showError("よみこみに しっぱいしました。\n" + message);
+      });
+    })();
+  </script>
+</body>
+</html>

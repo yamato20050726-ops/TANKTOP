@@ -1,0 +1,58 @@
+﻿%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb4af361b31043dea3c2712952108c7e, type: 3}
+  m_Name: Char02_ScoopFairy
+  m_EditorClassIdentifier: 
+  displayName: "\u30B9\u30AF\u30FC\u30D7\u306E\u3088\u3046\u305B\u3044"
+  description: "\u3068\u304F\u306B\u30D7\u30ED\u30C6\u30A4\u30F3\u306E\u30B9\u30AF\u30FC\u30D7\u306B\u3053\u3060\u308F\u308A\u306F\u306A\u3044\u3002\u3088\u304F\u30D7\u30ED\u30C6\u30A4\u30F3\u30D1\u30A6\u30C0\u30FC\u306E\u306A\u304B\u306B\u3046\u307E\u3063\u3066\u3057\u307E\u3046\u3002"
+  unlockKind: 0
+  unlockLevel: 2
+  openSprite: {fileID: 21300000, guid: ed24eb7a20d68ff4091541b6413629f6, type: 3}
+  closedSprite: {fileID: 21300000, guid: 8dacecb6a2e1dd7458f91b722629cddf, type: 3}
+  portraitSprite: {fileID: 0}
+  tintColor: {r: 1, g: 1, b: 1, a: 1}
+  spriteSwapMode: 1
+  spriteSwapInterval: 4
+  enemyOpenSprite: {fileID: 21300000, guid: df34f4e0629aaa84e906e77cbeee0f01, type: 3}
+  enemyClosedSprite: {fileID: 21300000, guid: 315f8afcde58e8e45a3704d8f32dc5d6, type: 3}
+  bodyScale: {x: 1, y: 1}
+  colliderSize: {x: 0.842, y: 0.454}
+  colliderOffset: {x: 0.011, y: 0}
+  enemyBodyScale: {x: 1, y: 1}
+  enemyColliderSize: {x: 0.842, y: 0.454}
+  enemyColliderOffset: {x: 0.011, y: 0}
+  maxHp: 1
+  moveSpeed: 0.45
+  speedBoostMultiplier: 1.08
+  maxSpeedBoostStacks: 7
+  fireRate: 2
+  bulletSpeed: 0.6
+  shotCost: 1
+  waveShot: 0
+  shotWaveAmplitude: 0.9
+  shotWaveFrequency: 2.2
+  shotDisplayName: "\u30B7\u30E7\u30C3\u30C8"
+  maxPoints: 10
+  regenInterval: 2
+  startingPoints: 0
+  skill2:
+    kind: 4
+    displayName: "\u30D1\u30A6\u30C0\u30FC\u30B7\u30E7\u30C3\u30C8"
+    pointCost: 3
+    unlockPoints: 2
+    cooldown: 1.5
+  skill3:
+    kind: 5
+    displayName: "\u30D1\u30A6\u30C0\u30FC\u30D6\u30EC\u30B9"
+    pointCost: 7
+    unlockPoints: 2
+    cooldown: 8

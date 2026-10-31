@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb4af361b31043dea3c2712952108c7e, type: 3}
+  m_Name: Char03_Heavy
+  m_EditorClassIdentifier: 
+  displayName: ヘビィ
+  description: 動きは鈍いがポイントが多く貯まる。シールドで受け止めて大きい弾を通す。
+  openSprite: {fileID: 21300000, guid: 4511d742640ffc44099be70c3c7518c9, type: 3}
+  closedSprite: {fileID: 21300000, guid: e8e7b5ff71f746b3b319ded5818839d1, type: 3}
+  portraitSprite: {fileID: 0}
+  tintColor: {r: 1, g: 0.62, b: 0.42, a: 1}
+  maxHp: 1
+  moveSpeed: 0.3
+  speedBoostMultiplier: 1.05
+  maxSpeedBoostStacks: 7
+  fireRate: 1.1
+  bulletSpeed: 0.45
+  shotCost: 2
+  maxPoints: 14
+  regenInterval: 1.8
+  startingPoints: 3
+  skill2:
+    kind: 3
+    displayName: 
+    pointCost: 6
+    unlockPoints: 2
+    cooldown: 6
+  skill3:
+    kind: 1
+    displayName: 
+    pointCost: 6
+    unlockPoints: 2
+    cooldown: 1

@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bb4af361b31043dea3c2712952108c7e, type: 3}
+  m_Name: Char02_Sprinter
+  m_EditorClassIdentifier: 
+  displayName: スプリンター
+  description: とにかく速い。避けながら撃ち続けるのが得意だが、ポイントの上限は低め。
+  openSprite: {fileID: 21300000, guid: 4511d742640ffc44099be70c3c7518c9, type: 3}
+  closedSprite: {fileID: 21300000, guid: e8e7b5ff71f746b3b319ded5818839d1, type: 3}
+  portraitSprite: {fileID: 0}
+  tintColor: {r: 0.54, g: 1, b: 0.72, a: 1}
+  maxHp: 1
+  moveSpeed: 0.68
+  speedBoostMultiplier: 1.1
+  maxSpeedBoostStacks: 7
+  fireRate: 3.2
+  bulletSpeed: 0.85
+  shotCost: 1
+  maxPoints: 8
+  regenInterval: 1.4
+  startingPoints: 2
+  skill2:
+    kind: 2
+    displayName: 
+    pointCost: 3
+    unlockPoints: 2
+    cooldown: 4
+  skill3:
+    kind: 0
+    displayName: 
+    pointCost: 5
+    unlockPoints: 2
+    cooldown: 1.5
